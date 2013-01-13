@@ -6,11 +6,11 @@
 }
 \arguments{
   \item{x}{A numeric n (n>5*p) by p (p>1) matrix or data frame.}
-   \item{nsamp}{a positive integer giving the number of resamples required;
+ \item{nsamp}{a positive integer giving the number of resamples required;
           \code{"nsamp"} may not be reached if too many of the p-subsamples,
           chosen out of the observed vectors, are in a hyperplane.  If \code{"nsamp"} is
-          omitted, it is calculated to provide a breakdown point of
-          \code{"alpha"} with probability 0.99.}
+          omitted, it is calculated so that the probability of getting at least one
+      uncontaminated starting point is always at least 99 percent when there are n/2 outliers.}
  \item{alpha}{numeric parameter controlling the size of the active subsets,
 	 i.e., \code{"h=quanf(alpha,n,p)"}.  Allowed
           values are between 0.5 and 1 and the default is 0.5.}

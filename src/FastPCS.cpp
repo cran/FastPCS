@@ -13,7 +13,6 @@
 
 #include <Eigen/Dense>
 #include <Eigen/LU>
-#include <Eigen/SVD>
 
 using namespace std;
 using namespace Eigen;
@@ -64,7 +63,7 @@ VectorXf FindLine(const MatrixXf& xSub,const int& h){
 VectorXf OneProj(const MatrixXf& x,const MatrixXf& xSub,const int& h,const VectorXi& RIndex){
 	VectorXf beta=FindLine(xSub,h);
 	VectorXf praj=((x*beta).array()-1).array().abs2();
-	praj/=(beta.norm()*beta.norm());
+	praj/=beta.squaredNorm();
 	VectorXf prej(h);
 	for(int i=0;i<h;i++)	prej(i)=praj(RIndex(i));
 	float prem=prej.head(h).mean();
@@ -74,7 +73,7 @@ VectorXf OneProj(const MatrixXf& x,const MatrixXf& xSub,const int& h,const Vecto
 float SubsetRankFun(const MatrixXf& x,const MatrixXf& xSub,const int& h,const VectorXi& RIndex){
 	VectorXf beta=FindLine(xSub,h);
 	VectorXf praj=((x*beta).array()-1).array().abs2();
-	praj/=(beta.norm()*beta.norm());
+	praj/=beta.squaredNorm();
 	VectorXf proj=praj;
 	VectorXf prej(h);
 	float fin=1, prem;
@@ -84,15 +83,15 @@ float SubsetRankFun(const MatrixXf& x,const MatrixXf& xSub,const int& h,const Ve
 	if(prem>1e-7)	fin=prej.head(h).mean()/prem;
 	return fin;
 }
-float Main(MatrixXf& x,const int& k0,const int& J,const int& k1,VectorXf& dP,const int& h_m){
-	int p=x.cols(),n=x.rows(),h=p+1;
+float Main(MatrixXf& x,const int& k0,const int& J,const int& k1,VectorXf& dP,const int& h_m,VectorXi& samset){
+	int p=x.cols(),n=x.rows(),h=p+1,ni=samset.size();
 	RowVectorXf xSub_mean(p);
 	MatrixXf xSub(h_m,p);
 	VectorXf fin(k1);
 	VectorXi RIndex(n);
 	VectorXi hl;
-	RIndex.head(h)=SampleR(n,h);
-	for(int i=0;i<h;i++) xSub.row(i)=x.row(RIndex(i));			
+	RIndex.head(h)=SampleR(ni,h);
+	for(int i=0;i<h;i++) xSub.row(i)=x.row(samset(RIndex(i)));			
 	hl.setLinSpaced(J+1,h,h_m);
 	h=hl(0);	
 	for(int j=0;j<J;j++){					//growing step
@@ -105,20 +104,21 @@ float Main(MatrixXf& x,const int& k0,const int& J,const int& k1,VectorXf& dP,con
 	return fin.array().log().mean(); 
 }
 extern "C"{
-	void fastpcs(int* n,int* p,int* k0,float* xi,int* k1,float* DpC,int* nsamp,int* J,float* objfunC,int* seed){
+	void fastpcs(int* n,int* p,int* k0,float* xi,int* k1,float* DpC,int* nsamp,int* J,float* objfunC,int* seed,int* ck,int* ni){
 		const int ik0=*k0,iJ=*J,ik1=*k1,ih_m=(*n+*p+1)/2;
 		int h_i=*p+1,h,j,i;
 		unsigned int iseed=*seed; 
 		float objfunA,objfunB=*objfunC;
 
 		MatrixXf x=Map<MatrixXf>(xi,*n,*p);	
+		VectorXi icK=Map<VectorXi>(ck,*ni);
 		VectorXf DpA=VectorXf::Zero(*n);
 		VectorXf DpB=VectorXf::Zero(*n);
 
 		for(i=0;i<*nsamp;i++){			//for i=0 to i<#p-subsets.
 			iseed++;
 			srand(iseed);
-			objfunA=Main(x,ik0,iJ,ik1,DpA,ih_m);
+			objfunA=Main(x,ik0,iJ,ik1,DpA,ih_m,icK);
 			if(objfunA<objfunB){
 				objfunB=objfunA;
 				DpB=DpA;

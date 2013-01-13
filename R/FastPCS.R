@@ -16,18 +16,20 @@ FastPCS<-function(x,nsamp=NULL,alpha=0.5,seed=NULL){
 	seed<-as.integer(seed)
 	x<-data.matrix(x)
 	na.x<-complete.cases(x)
+	if(!is.numeric(alpha))	stop("alpha should be numeric")
+	if(alpha<0.5 | alpha>=1)	stop("alpha should be in (0.5,1(.")
 	if(sum(na.x)!=nrow(x))  stop("Your data contains NA.")
 	if(nrow(x)<(5*ncol(x))) stop("n<5p. You need more observations")
 	n<-nrow(x)
 	p<-ncol(x)
 	chechidenc<-rep(NA,p)
-	for(i in 1:p)		chechidenc[i]<-min(colMedians(abs(sweep(x[,-i],1,x[,i],FUN="-"))))
+	for(i in 1:p)		chechidenc[i]<-min(colMedians(abs(sweep(x[,-i,drop=FALSE],1,x[,i],FUN="-"))))
 	if(min(chechidenc)<1e-8){
 		wones<-which(chechidenc<1e-8)
-		stop(paste0("Columns ",wones[1]," and ",wones[2],"contain at least n/2 identicial observations."))
+		stop(paste0("Columns ",wones[1]," and ",wones[2]," contain at least n/2 identicial observations."))
 	}
 	if(p<2)		stop("Univariate PCS is not implemented.")
-	if(p>25)		stop("FastPCS only works for dimensions <=25.")
+	if(p>25)		stop("FastPCS only works for dimensions<=25.")
 	if(is.null(nsamp)) 	nsamp<-NumStarts(p,eps=(1-alpha)) 
 	h<-quanf(n=n,p=p,alpha=alpha)
 	h0<-quanf(n=n,p=p,alpha=0.5)
@@ -35,7 +37,9 @@ FastPCS<-function(x,nsamp=NULL,alpha=0.5,seed=NULL){
 	k0<-max(k0,p+1);
 	k1<-max(k1,p+1);
 	objfunC<-1e3;
-	fit<-.C("fastpcs",as.integer(nrow(x)),as.integer(ncol(x)),as.integer(k0),as.single(x),as.integer(k1),as.single(Dp),as.integer(nsamp),as.integer(J),as.single(objfunC),as.integer(seed),PACKAGE="FastPCS")
+	icandid<-1:n-1
+	ni<-length(icandid)
+	fit<-.C("fastpcs",as.integer(nrow(x)),as.integer(ncol(x)),as.integer(k0),as.single(x),as.integer(k1),as.single(Dp),as.integer(nsamp),as.integer(J),as.single(objfunC),as.integer(seed),as.integer(icandid),as.integer(ni),PACKAGE="FastPCS")
 	outd<-as.numeric(fit[[6]])
 	if(sum(is.nan(outd))>0)	stop("too many singular subsets encoutered!")
 	best<-which(outd<=median(outd))
