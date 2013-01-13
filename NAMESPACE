@@ -1,0 +1,4 @@
+useDynLib(FastPCS)
+export("NumStarts")
+export("FastPCS")
+export("quanf")
