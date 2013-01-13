@@ -1,4 +1,5 @@
 useDynLib(FastPCS)
+import("matrixStats")
 export("NumStarts")
 export("FastPCS")
 export("quanf")

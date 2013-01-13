@@ -1,8 +1,9 @@
 Package: FastPCS
 Type: Package
 Title: R package to compute the FastPCS outlyingness index.
-Version: 0.0.2
+Version: 0.0.3
 Date: 2013-01-13
+Depends: matrixStats
 Suggests: mvtnorm
 LinkingTo: Rcpp, RcppEigen
 Description: R implementation of the FastPCS algorithm for computing
@@ -13,7 +14,7 @@ Authors@R: person("Kaveh", "Vakili", email =
         "kaveh.vakili@wis.kuleuven.be", role = c("aut", "cre"))
 Author: Kaveh Vakili [aut, cre]
 Maintainer: Kaveh Vakili <kaveh.vakili@wis.kuleuven.be>
-Packaged: 2013-05-25 08:53:17 UTC; kaveh
+Packaged: 2013-06-19 12:28:14 UTC; kaveh
 NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2013-05-25 15:30:22
+Date/Publication: 2013-06-19 17:34:14

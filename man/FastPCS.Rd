@@ -17,19 +17,23 @@
 \item{seed}{starting value for random generator. Default is seed = NULL}
 }
 \value{
- A  list with the following
-  components:
-
-  \item{raw.best}{The index of the h members of the H* (the optimal h-subset selected by the FastPCS algorithm).}
-
-  \item{raw.index}{A numeric n-vector containing, for each observation, the statistical distances 
-	wrt the members of H*.}
-  \item{rew.index}{A numeric n-vector containing, for each observation, the statistical distances 
-	wrt the members of reweighted subset.}
-  \item{obj}{The value of the FastPCS objective function computed on the selected h-subset.}
-   \item{cov}{The reweighted  estimate of scatter.}
-   \item{center}{The reweighted  estimate of location.}
-  \item{rew.wt}{The reweighting weights.}
+\item{nsamp}{The value of nsamp used.}
+\item{alpha}{The value of alpha used.}
+\item{obj}{The value of the FastPCS objective function of the optimal h subset.}
+\item{raw}{A list with the following components:}
+\itemize{
+    \item best: The index of the h observation with smallest outlyingness indexes.
+    \item center: The mean vector of the h observations with smallest outlyingness index.
+    \item cov: Covariance matrix of the h observations with smallest outlyingness index.
+    \item distance: The statistical distance of each observation wrt the center vector and cov matrix of the h observations with smallest outlyingness index.
+}
+\item{rew}{A list with the following components:}
+\itemize{
+    \item best: The index of the J observation with outlyingness smaller than the rejection threshold.
+    \item center: The mean vector of the J observations with outlyingness smaller than the rejection threshold.
+    \item cov: Covariance matrix of the J observations with outlyingness smaller than the rejection threshold.
+    \item distance: The statistical distance of each observation wrt the center vector and cov matrix of the J observations with outlyingness smaller than the rejection threshold.
+}
 }
 \description{
    Computes a fast and robust multivariate outlyingness index for a n by p matrix of 
@@ -45,20 +49,35 @@ x0[1:30,]<-matrix(rnorm(30*p,4.5,1/100),nc=p)
 z<-c(rep(0,30),rep(1,70))
 nstart<-NumStarts(p=p,eps=0.4)
 results<-FastPCS(x=x0,nsamp=nstart)
-z[results$raw.best]
+z[results$raw$best]
 
 #testing exact fit
 set.seed(123)
 n<-100
 p<-3
 x0<-matrix(rnorm(n*p),nc=p)
-x0[1:30,]<-matrix(rnorm(30*p,4.5,1/100),nc=p)
-x0[31:100,3]<-x0[31:100,2]
+x0[1:30,]<-matrix(rnorm(30*p,5,1/100),nc=p)
+x0[31:100,3]<-x0[31:100,2]*2+1
 z<-c(rep(0,30),rep(1,70))
 nstart<-NumStarts(p=p,eps=0.4)
 results<-FastPCS(x=x0,nsamp=nstart)
-z[results$raw.best]
+z[results$raw$best]
 results$obj
+
+#testing affine equivariance
+n<-100
+p<-3
+set.seed(123)
+x0<-matrix(rnorm(n*p),nc=p)
+nstart<-500
+results1<-FastPCS(x=x0,nsamp=nstart,seed=1)
+a1<-matrix(0.9,p,p)
+diag(a1)<-1
+x1<-x0\%*\%a1
+results2<-FastPCS(x=x1,nsamp=nstart,seed=1)
+results2$raw$center
+#should be the same
+results1$raw$center\%*\%a1
 }
 \author{
 	Kaveh Vakili

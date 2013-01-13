@@ -20,35 +20,43 @@ FastPCS<-function(x,nsamp=NULL,alpha=0.5,seed=NULL){
 	if(nrow(x)<(5*ncol(x))) stop("n<5p. You need more observations")
 	n<-nrow(x)
 	p<-ncol(x)
+	chechidenc<-rep(NA,p)
+	for(i in 1:p)		chechidenc[i]<-min(colMedians(abs(sweep(x[,-i],1,x[,i],FUN="-"))))
+	if(min(chechidenc)<1e-8){
+		wones<-which(chechidenc<1e-8)
+		stop(paste0("Columns ",wones[1]," and ",wones[2],"contain at least n/2 identicial observations."))
+	}
 	if(p<2)		stop("Univariate PCS is not implemented.")
 	if(p>25)		stop("FastPCS only works for dimensions <=25.")
 	if(is.null(nsamp)) 	nsamp<-NumStarts(p,eps=(1-alpha)) 
 	h<-quanf(n=n,p=p,alpha=alpha)
+	h0<-quanf(n=n,p=p,alpha=0.5)
 	Dp<-rep(1.00,n);
 	k0<-max(k0,p+1);
 	k1<-max(k1,p+1);
 	objfunC<-1e3;
 	fit<-.C("fastpcs",as.integer(nrow(x)),as.integer(ncol(x)),as.integer(k0),as.single(x),as.integer(k1),as.single(Dp),as.integer(nsamp),as.integer(J),as.single(objfunC),as.integer(seed),PACKAGE="FastPCS")
 	outd<-as.numeric(fit[[6]])
+	if(sum(is.nan(outd))>0)	stop("too many singular subsets encoutered!")
 	best<-which(outd<=median(outd))
-	if(min(svd(var(x[best,]))$d)>1e-8){
-		resd<-mahalanobis(x,colMeans(x[best,]),var(x[best,]))
-		best<-which(resd<=quantile(resd,h/n))
-		RWes<-RW(x0=x,best,h=h)
+	invc<-svd(cov(x[best,]))
+	if(min(invc$d)>1e-8){
+		stds<-sqrt(mahalanobis(x,colMeans(x[best,]),cov(x[best,])))
+		best<-which(stds<=quantile(stds,h/n))
+		rawF<-list(best=best,distance=stds,center=colMeans(x[best,]),cov=cov(x[best,]))
+		solV<-forwardsolve(chol(cov(x[best,])),diag(ncol(x)),upper.tri=TRUE)
+		xnor<-sweep(x,2,colMeans(x[best,]),FUN="-")%*%solV
+		xnor<-sweep(xnor,2,colMedians(abs(xnor))*1.4826,FUN="/");
+		best<-which(rowMaxs(abs(xnor))<=3)
+		stds<-sqrt(mahalanobis(x,colMeans(x[best,]),cov(x[best,])))
+		rewF<-list(best=best,distance=stds,center=colMeans(x[best,]),cov=cov(x[best,]))
 	} else {
 		"%ni%"<-Negate("%in%") 
 		resd<-as.numeric((1:n)%ni%best)
-		RWes<-"FastPCS has found n/2 observations on a subspace."
+		rewF<-list(distance=resd,best=best,center=colMeans(x[best,]),cov=cov(x[best,]))
+		rawF<-rewF
+		print("FastPCS has found n/2 observations on a subspace.")
 	}
-	list(raw.best=best,raw.outlyingness=sqrt(resd),obj=as.numeric(fit[[9]]),model=RWes)
+	list(alpha=alpha,nsamp=nsamp,raw=rawF,obj=as.numeric(fit[[9]]),rew=rewF)
 }
 quanf<-function(n,p,alpha)	return(floor(2*floor((n+p+1)/2)-n+2*(n-floor((n+p+1)/2))*alpha))
-RW<-function(x0,best,h){
-	n<-nrow(x0)
-	p<-ncol(x0)
-	a2<-mahalanobis(x0,colMeans(x0[best,]),cov(x0[best,]))
-	a4<-(qchisq(0.975,df=p)*quantile(a2,(h-p)/n))/qchisq((h-p)/n,p)
-	a3<-which(a2<=a4)
-	a5<-mahalanobis(x0,colMeans(x0[a3,]),cov(x0[a3,]))
-	list(rew.outlyingness=a5,cov=cov(x0[a3,]),center=colMeans(x0[a3,]),rew.best=a3)
-}
