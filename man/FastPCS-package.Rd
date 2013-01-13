@@ -9,7 +9,7 @@ Uses the FastPCS algorithm to compute the PCS multivariate
 \tabular{ll}{
 Package: \tab FastPCS\cr
 Type: \tab Package\cr
-Version: \tab 0.1.1\cr
+Version: \tab 0.0.2\cr
 Date: \tab 2013-01-13\cr
 Suggests: \tab mvtnorm\cr
 License: \tab GPL (>= 2)\cr

@@ -8,11 +8,12 @@ NumStarts<-function(p,gamma=0.99,eps=0.5){
 	ord<-10^floor(log10(ns0))
 	ceiling(ns0/ord)*ord
 }
-FastPCS<-function(x,nsamp=NULL,alpha=0.5){
+FastPCS<-function(x,nsamp=NULL,alpha=0.5,seed=NULL){
 	k1<-25
 	k0<-25
 	J<-3;
-
+	if(is.null(seed))	seed<-floor(runif(1,-2^31,2^31))
+	seed<-as.integer(seed)
 	x<-data.matrix(x)
 	na.x<-complete.cases(x)
 	if(sum(na.x)!=nrow(x))  stop("Your data contains NA.")
@@ -27,9 +28,27 @@ FastPCS<-function(x,nsamp=NULL,alpha=0.5){
 	k0<-max(k0,p+1);
 	k1<-max(k1,p+1);
 	objfunC<-1e3;
-	fit<-.C("fastpcs",as.integer(nrow(x)),as.integer(ncol(x)),as.integer(k0),as.single(x),as.integer(k1),as.single(Dp),as.integer(nsamp),as.integer(J),as.single(objfunC),PACKAGE="FastPCS")
+	fit<-.C("fastpcs",as.integer(nrow(x)),as.integer(ncol(x)),as.integer(k0),as.single(x),as.integer(k1),as.single(Dp),as.integer(nsamp),as.integer(J),as.single(objfunC),as.integer(seed),PACKAGE="FastPCS")
 	outd<-as.numeric(fit[[6]])
-	best<-which(outd<=quantile(outd,h/n,type=8))
-	list(best=best,outi=outd,obj=as.numeric(fit[[9]]))
+	best<-which(outd<=median(outd))
+	if(min(svd(var(x[best,]))$d)>1e-8){
+		resd<-mahalanobis(x,colMeans(x[best,]),var(x[best,]))
+		best<-which(resd<=quantile(resd,h/n))
+		RWes<-RW(x0=x,best,h=h)
+	} else {
+		"%ni%"<-Negate("%in%") 
+		resd<-as.numeric((1:n)%ni%best)
+		RWes<-"FastPCS has found n/2 observations on a subspace."
+	}
+	list(raw.best=best,raw.outlyingness=sqrt(resd),obj=as.numeric(fit[[9]]),model=RWes)
 }
 quanf<-function(n,p,alpha)	return(floor(2*floor((n+p+1)/2)-n+2*(n-floor((n+p+1)/2))*alpha))
+RW<-function(x0,best,h){
+	n<-nrow(x0)
+	p<-ncol(x0)
+	a2<-mahalanobis(x0,colMeans(x0[best,]),cov(x0[best,]))
+	a4<-(qchisq(0.975,df=p)*quantile(a2,(h-p)/n))/qchisq((h-p)/n,p)
+	a3<-which(a2<=a4)
+	a5<-mahalanobis(x0,colMeans(x0[a3,]),cov(x0[a3,]))
+	list(rew.outlyingness=a5,cov=cov(x0[a3,]),center=colMeans(x0[a3,]),rew.best=a3)
+}

@@ -31,8 +31,8 @@ struct IdLess {					//internal function.
     float const* values;
 };
 double Binomial(int n,int k){
-	if (k==0||n==k) return 1;
-	if (n<=0||k<0||n<k) return 0;
+	if (k==0||n==k) 	return 1;
+	if (n<=0||k<0||n<k) 	return 0;
 	int k1=(k<n-k)?k:n-k;
 	int k2=n-k1;
 	double fact=k2+1;
@@ -119,9 +119,9 @@ float Main(MatrixXf& x,const int& h_i,const int& k0,const int& J,const int& k1,V
 	return fin.array().log().mean(); 
 }
 extern "C"{
-	void fastpcs(int* n,int* p,int* k0,float* xi,int* k1,float* DpC,int* nsamp,int* J,float* objfunC){
+	void fastpcs(int* n,int* p,int* k0,float* xi,int* k1,float* DpC,int* nsamp,int* J,float* objfunC,int* seed){
 		const int ik0=*k0,iJ=*J,ik1=*k1,ih_m=(*n+*p+1)/2;
-		int h_i=*p+1,h,j,i; 
+		int h_i=*p+1,h,j,i,iseed=*seed; 
 		float objfunA,objfunB=*objfunC;
 
 		while(Binomial(h_i,*p)<*k0) h_i++;	//determines h_0
