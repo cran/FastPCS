@@ -18,12 +18,12 @@ LazyLoad: \tab yes\cr
 
 Index:
 \preformatted{
-FastPCS                 Function to compute the FastPCS multivariate outlyingness
-                       index.
-NumStarts                 Internal function used to compute the FastPCS multivariate
-                       outlyingness index.
-quanf                     Internal function used to compute the FastPCS multivariate
-                       outlyingness index.
+FastPCS                 Function to compute the FastPCS multivariate 
+                        outlyingness index.
+NumStarts               Internal function used to compute the FastPCS
+                        multivariate outlyingness index.
+quanf                   Internal function used to compute the FastPCS
+                        multivariate outlyingness index.
 }
 }
 \references{

@@ -1,10 +1,10 @@
-6561216d425e53e89bf0a8de2688bf77 *DESCRIPTION
+b1f3c7f73bcf859fe3982c2495b891e2 *DESCRIPTION
 d58f6ae8051bf5df8485a9557cac0451 *NAMESPACE
 9eedf35d6f999278aef99a3e12470b42 *R/FastPCS.R
-5f5fb341bf88cd8749fec9628af7df7b *man/FastPCS-package.Rd
+53f450d8b1a555e22583ebd12261c923 *man/FastPCS-package.Rd
 70ac62c8363c6ebc7701e177dca04a65 *man/FastPCS.Rd
 27c1ef291052f7d0fc2204aab92495a8 *man/NumStarts.Rd
 1510c484349136e98fa372af94226d91 *man/quanf.Rd
-1f1e5c0b751a5979f352209558c019c2 *src/FastPCS.cpp
-c482b86865b4ed925cb38779fd6a3233 *src/Makevars
+3fa9eb19e74a34c43a8e845c89b4846e *src/FastPCS.cpp
+f7eafd6ac023e33d21cd3b5bad17c43a *src/Makevars
 a68f199e32889b4dfd181da114dc6adc *src/Makevars.win

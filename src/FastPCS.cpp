@@ -50,17 +50,21 @@ VectorXi SampleR(const int m,const int p){
 }
 VectorXf FindLine(const MatrixXf& xSub,const int h){
 	const int p=xSub.cols();
-	VectorXi QIndexp=SampleR(h,p);
+	VectorXi  QIndexp(p);
+	QIndexp=SampleR(h,p);
 	VectorXf bt=VectorXf::Ones(p);
 	MatrixXf A(p,p);
 	for(int i=0;i<p;i++)	A.row(i)=xSub.row(QIndexp(i));
 	return(A.lu().solve(bt));
 }
 VectorXf OneProj(const MatrixXf& x,const MatrixXf& xSub,const int h,const VectorXi& RIndex,const int h_m){
-	VectorXf beta=FindLine(xSub,h);
-	VectorXf praj=((x*beta).array()-1.0).array().abs2();
-	praj/=beta.squaredNorm();
+	const int p=x.cols(),n=x.rows();
+	VectorXf beta(p);
+	VectorXf praj(n);
 	VectorXf prej(h);
+	beta=FindLine(xSub,h);
+	praj=((x*beta).array()-1.0).array().abs2();
+	praj/=beta.squaredNorm();
 	for(int i=0;i<h;i++)	prej(i)=praj(RIndex(i));
 	float prem=prej.head(h).mean(),tol=1e-7;
 	if(prem<tol){	
@@ -78,14 +82,16 @@ VectorXf OneProj(const MatrixXf& x,const MatrixXf& xSub,const int h,const Vector
 	return praj/=prem;
 }
 float SubsetRankFun(const MatrixXf& x,const MatrixXf& xSub,const int h,const VectorXi& RIndex){
-	VectorXf beta=FindLine(xSub,h);
-	VectorXf praj=((x*beta).array()-1.0).array().abs2();
-	praj/=beta.squaredNorm();
-	VectorXf proj=praj;
+	const int p=x.cols(),n=x.rows();
 	VectorXf prej(h);
-	nth_element(proj.data(),proj.data()+h,proj.data()+proj.size());	
+	VectorXf beta(p);
+	VectorXf praj(n);
+	beta=FindLine(xSub,h);
+	praj=((x*beta).array()-1.0).array().abs2();
+	praj/=beta.squaredNorm();
 	for(int i=0;i<h;i++)	prej(i)=praj(RIndex(i));
-	float prem=proj.head(h).mean(), fin=(prem>1e-7)?(prej.head(h).mean()/prem):(1.0);
+	nth_element(praj.data(),praj.data()+h,praj.data()+praj.size());	
+	float prem=praj.head(h).mean(),fin=(prem>1e-7)?(prej.head(h).mean()/prem):(1.0);
 	return fin;
 }
 float Main(const MatrixXf& x,const int k0,const int J,const int k1,VectorXf& dP,const int h_m,VectorXi& samset){
@@ -93,7 +99,7 @@ float Main(const MatrixXf& x,const int k0,const int J,const int k1,VectorXf& dP,
 	MatrixXf xSub(h_m,p);
 	VectorXf fin(k1);
 	VectorXi RIndex(n);
-	VectorXi hl;
+	VectorXi hl(J+1);
 	RIndex.head(h)=SampleR(ni,h);
 	for(int i=0;i<h;i++) xSub.row(i)=x.row(samset(RIndex(i)));			
 	hl.setLinSpaced(J+1,h,h_m);
