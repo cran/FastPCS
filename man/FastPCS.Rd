@@ -79,6 +79,13 @@ results2$raw$center
 #should be the same
 results1$raw$center\%*\%a1
 }
+\references{
+	Vakili, K. and Schmitt, E. (2014).
+	Finding multivariate outliers with FastPCS.
+	\emph{Computational Statistics \& Data Analysis}.
+  	Vol. 69, pp 54--66.
+	(http://arxiv.org/abs/1301.2053)
+}
 \author{
 	Kaveh Vakili
 }

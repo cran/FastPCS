@@ -9,11 +9,9 @@ NumStarts<-function(p,gamma=0.99,eps=0.5){
 	ceiling(ns0/ord)*ord
 }
 FastPCS<-function(x,nsamp=NULL,alpha=0.5,seed=NULL){
-	k1<-25
-	k0<-25
-	J<-3;
+	k1<-25;k0<-25;J<-3;
 	if(is.null(seed))	seed<-floor(runif(1,-2^31,2^31))
-	seed<-as.integer(seed)
+	seed<-as.integer(seed)+1
 	x<-data.matrix(x)
 	na.x<-complete.cases(x)
 	if(!is.numeric(alpha))	stop("alpha should be numeric")
@@ -39,20 +37,21 @@ FastPCS<-function(x,nsamp=NULL,alpha=0.5,seed=NULL){
 	objfunC<-1e3;
 	icandid<-1:n-1
 	ni<-length(icandid)
-	fit<-.C("fastpcs",as.integer(nrow(x)),as.integer(ncol(x)),as.integer(k0),as.single(x),as.integer(k1),as.single(Dp),as.integer(nsamp),as.integer(J),as.single(objfunC),as.integer(seed),as.integer(icandid),as.integer(ni),PACKAGE="FastPCS")
-	outd<-as.numeric(fit[[6]])
-	if(sum(is.nan(outd))>0)	stop("too many singular subsets encoutered!")
+	fitd<-.C("fastpcs",as.integer(nrow(x)),as.integer(ncol(x)),as.integer(k0),as.single(x),as.integer(k1),as.single(Dp),as.integer(nsamp),as.integer(J),as.single(objfunC),as.integer(seed),as.integer(icandid),as.integer(ni),PACKAGE="FastPCS")
+	outd<-as.numeric(fitd[[6]])
+	if(is.nan(outd)[1])	stop("too many singular subsets encoutered!")
 	best<-which(outd<=median(outd))
-	invc<-svd(cov(x[best,]))
+	invc<-svd(cov(x[best,]),nu=0,nv=0)
 	if(min(invc$d)>1e-8){
-		stds<-sqrt(mahalanobis(x,colMeans(x[best,]),cov(x[best,])))
+		solV<-chol2inv(chol(cov(x[best,])));
+		stds<-mahalanobis(x,colMeans(x[best,]),solV,inverted=TRUE)
 		best<-which(stds<=quantile(stds,h/n))
-		rawF<-list(best=best,distance=stds,center=colMeans(x[best,]),cov=cov(x[best,]))
-		solV<-forwardsolve(chol(cov(x[best,])),diag(ncol(x)),upper.tri=TRUE)
-		xnor<-sweep(x,2,colMeans(x[best,]),FUN="-")%*%solV
-		xnor<-sweep(xnor,2,colMedians(abs(xnor))*1.4826,FUN="/");
-		best<-which(rowMaxs(abs(xnor))<=3)
-		stds<-sqrt(mahalanobis(x,colMeans(x[best,]),cov(x[best,])))
+		rawF<-list(best=best,distance=sqrt(stds),center=colMeans(x[best,]),cov=cov(x[best,]))
+		solV<-chol2inv(chol(cov(x[best,])));
+		stds<-mahalanobis(x,colMeans(x[best,]),solV,inverted=TRUE)
+		best<-which(stds<=qchisq(0.975,df=p))
+		solV<-chol2inv(chol(cov(x[best,])));
+		stds<-sqrt(mahalanobis(x,colMeans(x[best,]),solV,inverted=TRUE))
 		rewF<-list(best=best,distance=stds,center=colMeans(x[best,]),cov=cov(x[best,]))
 	} else {
 		"%ni%"<-Negate("%in%") 
@@ -61,6 +60,6 @@ FastPCS<-function(x,nsamp=NULL,alpha=0.5,seed=NULL){
 		rawF<-rewF
 		print("FastPCS has found n/2 observations on a subspace.")
 	}
-	list(alpha=alpha,nsamp=nsamp,raw=rawF,obj=as.numeric(fit[[9]]),rew=rewF)
+	list(alpha=alpha,nsamp=nsamp,raw=rawF,obj=as.numeric(fitd[[9]]),rew=rewF)
 }
 quanf<-function(n,p,alpha)	return(floor(2*floor((n+p+1)/2)-n+2*(n-floor((n+p+1)/2))*alpha))

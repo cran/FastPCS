@@ -26,6 +26,13 @@ quanf                     Internal function used to compute the FastPCS multivar
                        outlyingness index.
 }
 }
+\references{
+	Vakili, K. and Schmitt, E. (2014).
+	Finding multivariate outliers with FastPCS.
+	\emph{Computational Statistics \& Data Analysis}.
+  	Vol. 69, pp 54--66.
+	(http://arxiv.org/abs/1301.2053)
+}
 \author{
 Kaveh Vakili [aut, cre],
 Maintainer: Kaveh Vakili <kaveh.vakili@wis.kuleuven.be>

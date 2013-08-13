@@ -19,7 +19,6 @@ using namespace Eigen;
 using Eigen::MatrixXf;
 using Eigen::VectorXf;
 using Eigen::VectorXi;
-using Eigen::RowVectorXf;
 
 struct IdLess {					//internal function.
     template <typename T>
@@ -37,22 +36,19 @@ void GetSmallest(const VectorXf& r,int h,const MatrixXf& x,MatrixXf& xSub,Vector
 	for (int i=0;i<h;i++) 	xSub.row(i)=x.row(SIndx2(i));
 	RIndex.head(h)=SIndx2.head(h);	
 }
-VectorXi SampleR(const int& m,const int& p){
-	int i,j,n=m;
-	VectorXi x(n);
+VectorXi SampleR(const int m,const int p){
+	int i,j,nn=m;
+	VectorXi ind(nn);
 	VectorXi y(p);
-	x.setLinSpaced(n,0,n-1);
-	VectorXf urd=VectorXf::Random(p).array().abs();
-	--n;
-	for(i=0;i<p;i++){
-		j=n*urd(i);
-		y(i)=x(j);
-		--n;
-		x(j)=x(n);
+	ind.setLinSpaced(nn,0,nn-1);
+    	for(i=0;i<p;i++){
+		j=rand()%nn;
+		y(i)=ind(j);
+		ind(j)=ind(--nn);
     	}
 	return y;		
 }
-VectorXf FindLine(const MatrixXf& xSub,const int& h){
+VectorXf FindLine(const MatrixXf& xSub,const int h){
 	const int p=xSub.cols();
 	VectorXi QIndexp=SampleR(h,p);
 	VectorXf bt=VectorXf::Ones(p);
@@ -60,19 +56,19 @@ VectorXf FindLine(const MatrixXf& xSub,const int& h){
 	for(int i=0;i<p;i++)	A.row(i)=xSub.row(QIndexp(i));
 	return(A.lu().solve(bt));
 }
-VectorXf OneProj(const MatrixXf& x,const MatrixXf& xSub,const int& h,const VectorXi& RIndex){
+VectorXf OneProj(const MatrixXf& x,const MatrixXf& xSub,const int h,const VectorXi& RIndex){
 	VectorXf beta=FindLine(xSub,h);
-	VectorXf praj=((x*beta).array()-1).array().abs2();
+	VectorXf praj=((x*beta).array()-1.0).array().abs2();
 	praj/=beta.squaredNorm();
 	VectorXf prej(h);
 	for(int i=0;i<h;i++)	prej(i)=praj(RIndex(i));
 	float prem=prej.head(h).mean();
-	if(prem>1e-7)	praj/=prem;
+	if(prem>1e-8)	praj/=prem;
 	return praj;
 }
-float SubsetRankFun(const MatrixXf& x,const MatrixXf& xSub,const int& h,const VectorXi& RIndex){
+float SubsetRankFun(const MatrixXf& x,const MatrixXf& xSub,const int h,const VectorXi& RIndex){
 	VectorXf beta=FindLine(xSub,h);
-	VectorXf praj=((x*beta).array()-1).array().abs2();
+	VectorXf praj=((x*beta).array()-1.0).array().abs2();
 	praj/=beta.squaredNorm();
 	VectorXf proj=praj;
 	VectorXf prej(h);
@@ -80,12 +76,11 @@ float SubsetRankFun(const MatrixXf& x,const MatrixXf& xSub,const int& h,const Ve
 	nth_element(proj.data(),proj.data()+h,proj.data()+proj.size());	
 	for(int i=0;i<h;i++)	prej(i)=praj(RIndex(i));
 	prem=proj.head(h).mean();
-	if(prem>1e-7)	fin=prej.head(h).mean()/prem;
+	if(prem>1e-8)	fin=prej.head(h).mean()/prem;
 	return fin;
 }
-float Main(MatrixXf& x,const int& k0,const int& J,const int& k1,VectorXf& dP,const int& h_m,VectorXi& samset){
+float Main(const MatrixXf& x,const int k0,const int J,const int k1,VectorXf& dP,const int h_m,VectorXi& samset){
 	int p=x.cols(),n=x.rows(),h=p+1,ni=samset.size();
-	RowVectorXf xSub_mean(p);
 	MatrixXf xSub(h_m,p);
 	VectorXf fin(k1);
 	VectorXi RIndex(n);
@@ -106,24 +101,21 @@ float Main(MatrixXf& x,const int& k0,const int& J,const int& k1,VectorXf& dP,con
 extern "C"{
 	void fastpcs(int* n,int* p,int* k0,float* xi,int* k1,float* DpC,int* nsamp,int* J,float* objfunC,int* seed,int* ck,int* ni){
 		const int ik0=*k0,iJ=*J,ik1=*k1,ih_m=(*n+*p+1)/2;
-		int h_i=*p+1,h,j,i;
-		unsigned int iseed=*seed; 
 		float objfunA,objfunB=*objfunC;
-
+		srand(*seed);
 		MatrixXf x=Map<MatrixXf>(xi,*n,*p);	
 		VectorXi icK=Map<VectorXi>(ck,*ni);
 		VectorXf DpA=VectorXf::Zero(*n);
 		VectorXf DpB=VectorXf::Zero(*n);
 
-		for(i=0;i<*nsamp;i++){			//for i=0 to i<#p-subsets.
-			iseed++;
-			srand(iseed);
+		for(int i=0;i<*nsamp;i++){			//for i=0 to i<#p-subsets.
 			objfunA=Main(x,ik0,iJ,ik1,DpA,ih_m,icK);
 			if(objfunA<objfunB){
 				objfunB=objfunA;
 				DpB=DpA;
 			}
 		}
+
  		Map<VectorXf>(DpC,*n)=DpB.array();
 		*objfunC=objfunB;
 	}
