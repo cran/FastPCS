@@ -15,19 +15,13 @@ FastPCS<-function(x,nsamp=NULL,alpha=0.5,seed=NULL){
 	x<-data.matrix(x)
 	na.x<-complete.cases(x)
 	if(!is.numeric(alpha))	stop("alpha should be numeric")
-	if(alpha<0.5 | alpha>=1)	stop("alpha should be in (0.5,1(.")
+	if(alpha<0.5 | alpha>=1)stop("alpha should be in (0.5,1(.")
 	if(sum(na.x)!=nrow(x))  stop("Your data contains NA.")
 	if(nrow(x)<(5*ncol(x))) stop("n<5p. You need more observations")
 	n<-nrow(x)
 	if(nrow(unique(x))<n)	stop("Your dataset contains duplicated rows. Please remove them.") 
 	p<-ncol(x)
-	chechidenc<-rep(NA,p)
-	for(i in 1:p)		chechidenc[i]<-min(colMedians(abs(sweep(x[,-i,drop=FALSE],1,x[,i],FUN="-"))))
-	if(min(chechidenc)<1e-8){
-		wones<-which(chechidenc<1e-8)
-		stop(paste0("Columns ",wones[1]," and ",wones[2]," contain at least n/2 identicial observations."))
-	}
-	if(p<2)		stop("Univariate PCS is not implemented.")
+	if(p<2)			stop("Univariate PCS is not implemented.")
 	if(p>25)		stop("FastPCS only works for dimensions<=25.")
 	if(is.null(nsamp)) 	nsamp<-NumStarts(p,eps=(1-alpha)) 
 	h<-quanf(n=n,p=p,alpha=alpha)
@@ -40,7 +34,7 @@ FastPCS<-function(x,nsamp=NULL,alpha=0.5,seed=NULL){
 	ni<-length(icandid)
 	fitd<-.C("fastpcs",as.integer(nrow(x)),as.integer(ncol(x)),as.integer(k0),as.single(x),as.integer(k1),as.single(Dp),as.integer(nsamp),as.integer(J),as.single(objfunC),as.integer(seed),as.integer(icandid),as.integer(ni),PACKAGE="FastPCS")
 	outd<-as.numeric(fitd[[6]])
-	if(is.nan(outd)[1])	stop("too many singular subsets encoutered!")
+	if(is.nan(outd)[1])	stop("too many singular subsets encoutered!")	
 	best<-which(outd<=median(outd))
 	invc<-svd(cov(x[best,]),nu=0,nv=0)
 	if(min(invc$d)>1e-8){
@@ -48,10 +42,8 @@ FastPCS<-function(x,nsamp=NULL,alpha=0.5,seed=NULL){
 		stds<-mahalanobis(x,colMeans(x[best,]),solV,inverted=TRUE)
 		best<-which(stds<=quantile(stds,h/n))
 		rawF<-list(best=best,distance=sqrt(stds),center=colMeans(x[best,]),cov=cov(x[best,]))
-		solV<-forwardsolve(chol(cov(x[best,])),diag(ncol(x)),upper.tri=TRUE)
-		xnor<-sweep(x,2,colMeans(x[best,]),FUN="-")%*%solV
-		xnor<-sweep(xnor,2,colMedians(abs(xnor))*1.4826,FUN="/");
-		best<-which(stds<=qchisq(0.975,df=p))
+		thr0<-qchisq(0.975,df=p)/qchisq(0.5,df=p)*median(stds)
+		best<-which(stds<=thr0)
 		solV<-chol2inv(chol(cov(x[best,])));
 		stds<-sqrt(mahalanobis(x,colMeans(x[best,]),solV,inverted=TRUE))
 		rewF<-list(best=best,distance=stds,center=colMeans(x[best,]),cov=cov(x[best,]))
