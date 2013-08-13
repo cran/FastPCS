@@ -19,6 +19,7 @@ FastPCS<-function(x,nsamp=NULL,alpha=0.5,seed=NULL){
 	if(sum(na.x)!=nrow(x))  stop("Your data contains NA.")
 	if(nrow(x)<(5*ncol(x))) stop("n<5p. You need more observations")
 	n<-nrow(x)
+	if(nrow(unique(x))<n)	stop("Your dataset contains duplicated rows. Please remove them.") 
 	p<-ncol(x)
 	chechidenc<-rep(NA,p)
 	for(i in 1:p)		chechidenc[i]<-min(colMedians(abs(sweep(x[,-i,drop=FALSE],1,x[,i],FUN="-"))))
@@ -47,8 +48,9 @@ FastPCS<-function(x,nsamp=NULL,alpha=0.5,seed=NULL){
 		stds<-mahalanobis(x,colMeans(x[best,]),solV,inverted=TRUE)
 		best<-which(stds<=quantile(stds,h/n))
 		rawF<-list(best=best,distance=sqrt(stds),center=colMeans(x[best,]),cov=cov(x[best,]))
-		solV<-chol2inv(chol(cov(x[best,])));
-		stds<-mahalanobis(x,colMeans(x[best,]),solV,inverted=TRUE)
+		solV<-forwardsolve(chol(cov(x[best,])),diag(ncol(x)),upper.tri=TRUE)
+		xnor<-sweep(x,2,colMeans(x[best,]),FUN="-")%*%solV
+		xnor<-sweep(xnor,2,colMedians(abs(xnor))*1.4826,FUN="/");
 		best<-which(stds<=qchisq(0.975,df=p))
 		solV<-chol2inv(chol(cov(x[best,])));
 		stds<-sqrt(mahalanobis(x,colMeans(x[best,]),solV,inverted=TRUE))
