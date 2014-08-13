@@ -1,8 +1,8 @@
-\name{NumStarts}
-\alias{NumStarts}
-\title{Computes the number of starting p subset}
+\name{numStarts}
+\alias{numStarts}
+\title{Computes the number of starting p-subsets}
 \usage{
-  NumStarts(p,gamma=0.99,eps=0.5)
+  numStarts(p,gamma=0.99,eps=0.5)
 }
 \arguments{
   \item{p}{number of dimensions of the data matrix X.}
@@ -14,14 +14,15 @@
 
 }
 \value{
-  An integer number of starting p-subset.
+  An integer number of starting p-subsets.
 }
 \description{
+Computes the number of starting p-subsets so that the desired probability of selecting at least one clean one is achieved.
   This is an internal function not intended to be called 
   by the user.
 }
 \examples{
-NumStarts(p=3,gamma=0.99,eps=0.4)
+numStarts(p=3,gamma=0.99,eps=0.4)
 }
 \author{
 Kaveh Vakili

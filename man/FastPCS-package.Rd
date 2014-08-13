@@ -1,9 +1,8 @@
 \name{FastPCS-package}
 \docType{package}
-\title{Code to compute the FastPCS multivariate outlyingness index.}
+\title{FastPCS estimator of location and scatter.}
 \description{
-Uses the FastPCS algorithm to compute the PCS multivariate 
-	outlyingness index.
+Uses the FastPCS algorithm to compute the robust PCS estimator of location and scatter.
 }
 \details{
 \tabular{ll}{
@@ -18,12 +17,10 @@ LazyLoad: \tab yes\cr
 
 Index:
 \preformatted{
-FastPCS                 Function to compute the FastPCS multivariate 
-                        outlyingness index.
-NumStarts               Internal function used to compute the FastPCS
-                        multivariate outlyingness index.
-quanf                   Internal function used to compute the FastPCS
-                        multivariate outlyingness index.
+FastPCS                 Function to compute the robust FastPCS estimator of location and scatter.
+numStarts               Internal function used to compute the number of starting points used by FastPCS.
+quanf                   Internal function used to compute h, the minimum number of observations expected to be uncontaminated.
+plot.FastPCS		Plots the robust distances outputted by a FastPCS model.
 }
 }
 \references{

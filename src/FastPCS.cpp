@@ -33,8 +33,8 @@ struct IdLess {					//internal function.
     }
     float const* values;
 };
-double GetUniform(){
-    static std::uniform_real_distribution<double> Dist(0,1);
+float GetUniform(){
+    static std::uniform_real_distribution<float> Dist(0,1);
     return Dist(mt);
 }
 void GetSmallest(const VectorXf& r,const int& h,const MatrixXf& x,MatrixXf& xSub,VectorXi& RIndex){
@@ -48,8 +48,8 @@ void GetSmallest(const VectorXf& r,const int& h,const MatrixXf& x,MatrixXf& xSub
 VectorXi SampleR(const int m,const int p){
 	int i,j,nn=m;
 	VectorXi ind(nn);
-	VectorXi y(p);
 	ind.setLinSpaced(nn,0,nn-1);
+	VectorXi y(p);
     	for(i=0;i<p;i++){
 		j=GetUniform()*nn;
 		y(i)=ind(j);
@@ -61,19 +61,19 @@ VectorXf FindLine(const MatrixXf& xSub,const int h){
 	const int p=xSub.cols();
 	VectorXi  QIndexp(p);
 	QIndexp=SampleR(h,p);
-	VectorXf bt=VectorXf::Ones(p);
 	MatrixXf A(p,p);
 	for(int i=0;i<p;i++)	A.row(i)=xSub.row(QIndexp(i));
+	VectorXf bt=VectorXf::Ones(p);
 	return(A.lu().solve(bt));
 }
 VectorXf OneProj(const MatrixXf& x,const MatrixXf& xSub,const int h,const VectorXi& RIndex,const int h_m){
 	const int p=x.cols(),n=x.rows();
 	VectorXf beta(p);
-	VectorXf praj(n);
-	VectorXf prej(h);
 	beta=FindLine(xSub,h);
+	VectorXf praj(n);
 	praj=((x*beta).array()-1.0f).array().abs2();
 	praj/=beta.squaredNorm();
+	VectorXf prej(h);
 	for(int i=0;i<h;i++)	prej(i)=praj(RIndex(i));
 	float prem=prej.head(h).mean(),tol=1e-7;
 	if(prem<tol){	
@@ -92,29 +92,29 @@ VectorXf OneProj(const MatrixXf& x,const MatrixXf& xSub,const int h,const Vector
 }
 float SubsetRankFun(const MatrixXf& x,const MatrixXf& xSub,const int h,const VectorXi& RIndex){
 	const int p=x.cols(),n=x.rows();
-	VectorXf prej(h);
 	VectorXf beta(p);
-	VectorXf praj(n);
 	beta=FindLine(xSub,h);
+	VectorXf praj(n);
 	praj=((x*beta).array()-1.0f).array().abs2();
 	praj/=beta.squaredNorm();
+	VectorXf prej(h);
 	for(int i=0;i<h;i++)	prej(i)=praj(RIndex(i));
-	nth_element(praj.data(),praj.data()+h,praj.data()+praj.size());	
+	std::nth_element(praj.data(),praj.data()+h,praj.data()+praj.size());	
 	float prem=praj.head(h).mean(),fin=(prem>1e-7)?(prej.head(h).mean()/prem):(1.0f);
 	return fin;
 }
 float Main(const MatrixXf& x,const int k0,const int J,const int k1,VectorXf& dP,const int h_m,VectorXi& samset,const VectorXi& hl){
 	int p=x.cols(),n=x.rows(),h=p+1,ni=samset.size();
-	MatrixXf xSub(h_m,p);
-	VectorXf fin(k1);
 	VectorXi RIndex(n);
 	RIndex.head(h)=SampleR(ni,h);
+	MatrixXf xSub(h_m,p);
 	for(int i=0;i<h;i++) xSub.row(i)=x.row(samset(RIndex(i)));			
 	for(int j=0;j<J;j++){					//growing step
 		dP=VectorXf::Zero(n);
 		for(int i=0;i<k0;i++) dP+=OneProj(x,xSub,hl(j),RIndex,h_m);
 		GetSmallest(dP,hl(j+1),x,xSub,RIndex);
 	}
+	VectorXf fin(k1);
 	for(int i=0;i<k1;i++) fin(i)=SubsetRankFun(x,xSub,hl(J),RIndex);
 	return fin.array().log().mean();
 }
@@ -122,25 +122,24 @@ VectorXi CStep(VectorXf& dP,MatrixXf& x,const int h){
 	const int n=x.rows(),p=x.cols();
 	float w1,w0;
 	int w2=1,i;
-	MatrixXf xSub(h,p);
-	MatrixXf b=MatrixXf::Identity(p,p);
-	RowVectorXf xSub_mean(p);
 	VectorXi dIn(n);
-	MatrixXf Sig(p,p);
-
 	dIn.setLinSpaced(n,0,n-1);
 	std::nth_element(dIn.data(),dIn.data()+h,dIn.data()+dIn.size(),IdLess(dP.data()));
+	MatrixXf xSub(h,p);
 	for(i=0;i<h;i++) 	xSub.row(i)=x.row(dIn(i));
+	RowVectorXf xSub_mean(p);
 	xSub_mean=xSub.colwise().mean();	
 	xSub.rowwise()-=xSub_mean;
 	x.rowwise()-=xSub_mean;
+	MatrixXf Sig(p,p);
 	Sig=xSub.adjoint()*xSub;
 	Sig.array()/=(float)(h-1);
 	LDLT<MatrixXf> chol=Sig.ldlt();
+	MatrixXf b=MatrixXf::Identity(p,p);
 	chol.solveInPlace(b);
 	w1=chol.vectorD().array().minCoeff();
 	if(w1>1e-6){
-		w1=chol.vectorD().array().log().sum()*2.0f;
+		w1=std::numeric_limits<float>::max();
 		dP=((x*b).cwiseProduct(x)).rowwise().sum();
 	} else {
 		w2=0;
@@ -170,14 +169,13 @@ VectorXi CStep(VectorXf& dP,MatrixXf& x,const int h){
 } 
 extern "C"{
 	void fastpcs(int* n,int* p,int* k0,float* xi,int* k1,float* DpC,int* nsamp,int* J,float* objfunC,int* seed,int* ck,int* ni,int* n1,int* n2,int* hm){
-		const int ik0=*k0,iJ=*J,ik1=*k1,ih_m=*hm,iseed=*seed;
+		const int ik0=*k0,iJ=*J,ik1=*k1,ih_m=*hm;
 		float objfunA,objfunB=*objfunC;
 		mt.seed(*seed);
 		MatrixXf x=Map<MatrixXf>(xi,*n,*p);	
 		VectorXi icK=Map<VectorXi>(ck,*ni);
 		VectorXf DpA=VectorXf::Zero(*n);
 		VectorXf DpB=VectorXf::Zero(*n);
-		VectorXi dpH(*hm);
 		VectorXi hl(*J+1);
 
 		hl.setLinSpaced(*J+1,*p+1,ih_m);
@@ -188,6 +186,7 @@ extern "C"{
 				DpB=DpA;
 			}
 		}
+		VectorXi dpH(*hm);
 		dpH.setLinSpaced(*n,0,*n-1);
 		std::nth_element(dpH.data(),dpH.data()+ih_m,dpH.data()+dpH.size(),IdLess(DpB.data()));
 		Map<VectorXi>(n1,*hm)=dpH.head(ih_m).array()+1;		
