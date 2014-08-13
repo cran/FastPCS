@@ -1,6 +1,6 @@
 useDynLib(FastPCS)
 import("matrixStats")
-export("numStarts")
+export("FPCSnumStarts")
 export("FastPCS")
 export("quanf")
 export("plot.FastPCS")

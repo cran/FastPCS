@@ -1,8 +1,8 @@
-\name{numStarts}
-\alias{numStarts}
+\name{FPCSnumStarts}
+\alias{FPCSnumStarts}
 \title{Computes the number of starting p-subsets}
 \usage{
-  numStarts(p,gamma=0.99,eps=0.5)
+  FPCSnumStarts(p,gamma=0.99,eps=0.5)
 }
 \arguments{
   \item{p}{number of dimensions of the data matrix X.}
@@ -22,7 +22,7 @@ Computes the number of starting p-subsets so that the desired probability of sel
   by the user.
 }
 \examples{
-numStarts(p=3,gamma=0.99,eps=0.4)
+FPCSnumStarts(p=3,gamma=0.99,eps=0.4)
 }
 \author{
 Kaveh Vakili

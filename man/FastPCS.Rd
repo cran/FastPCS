@@ -28,7 +28,7 @@ item{best}{The index of the observations with outlyingness smaller than the reje
 }
 \details{
 
-	The current version of FastPCS includes the use of a C-step procedure to improve efficiency (Rousseeuw and van Driessen (1999)). C-steps are taken after the raw subset is found and before reweighting. In experiments, we found that carrying C-Steps 
+	The current version of FastPCS includes the use of a C-step procedure to improve efficiency (Rousseeuw and van Driessen (1999)). C-steps are taken after the raw subset (H*) as been chosen (according to the I-index) and before reweighting. In experiments, we found that carrying C-Steps 
 	starting from the members of \code{$rawBest} improves the speed of convergence without increasing the bias
 	 of the final estimates. FastPCS is affine equivariant (Schmitt et al. (2014)) and thus consistent at the 
 	elliptical model (Maronna et al., (2006) p. 217).
@@ -38,15 +38,26 @@ item{best}{The index of the observations with outlyingness smaller than the reje
 	multivariate continuous data.
 }
 \examples{
-## generate data
+## testing outlier detection 
 set.seed(123)
 n<-100
 p<-3
 x0<-matrix(rnorm(n*p),nc=p)
 x0[1:30,]<-matrix(rnorm(30*p,4.5,1/100),nc=p)
 z<-c(rep(0,30),rep(1,70))
-nstart<-numStarts(p=p,eps=0.4)
+nstart<-FPCSnumStarts(p=p,eps=0.4)
 results<-FastPCS(x=x0,nSamp=nstart)
+z[results$best]
+
+## testing outlier detection, different value of alpha
+set.seed(123)
+n<-100
+p<-3
+x0<-matrix(rnorm(n*p),nc=p)
+x0[1:20,]<-matrix(rnorm(20*p,4.5,1/100),nc=p)
+z<-c(rep(0,20),rep(1,80))
+nstart<-FPCSnumStarts(p=p,eps=0.25)
+results<-FastPCS(x=x0,nSamp=nstart,alpha=0.75)
 z[results$best]
 
 #testing exact fit
@@ -57,7 +68,7 @@ x0<-matrix(rnorm(n*p),nc=p)
 x0[1:30,]<-matrix(rnorm(30*p,5,1/100),nc=p)
 x0[31:100,3]<-x0[31:100,2]*2+1
 z<-c(rep(0,30),rep(1,70))
-nstart<-numStarts(p=p,eps=0.4)
+nstart<-FPCSnumStarts(p=p,eps=0.4)
 results<-FastPCS(x=x0,nSamp=nstart)
 z[results$rawBest]
 results$obj

@@ -73,9 +73,9 @@ VectorXf OneProj(const MatrixXf& x,const MatrixXf& xSub,const int h,const Vector
 	VectorXf praj(n);
 	praj=((x*beta).array()-1.0f).array().abs2();
 	praj/=beta.squaredNorm();
-	VectorXf prej(h);
-	for(int i=0;i<h;i++)	prej(i)=praj(RIndex(i));
-	float prem=prej.head(h).mean(),tol=1e-7;
+	float prem=0.0f,tol=1e-8;
+	for(int i=0;i<h;i++)	prem+=praj(RIndex(i));
+	prem=prem/(float)h;
 	if(prem<tol){	
 		const int n=praj.size();
 		VectorXf d_resd=VectorXf::Zero(n);
@@ -103,9 +103,8 @@ float SubsetRankFun(const MatrixXf& x,const MatrixXf& xSub,const int h,const Vec
 	float prem=praj.head(h).mean(),fin=(prem>1e-7)?(prej.head(h).mean()/prem):(1.0f);
 	return fin;
 }
-float Main(const MatrixXf& x,const int k0,const int J,const int k1,VectorXf& dP,const int h_m,VectorXi& samset,const VectorXi& hl){
+float Main(const MatrixXf& x,const int k0,const int J,const int k1,VectorXf& dP,const int h_m,VectorXi& samset,const VectorXi& hl,VectorXi& RIndex){
 	int p=x.cols(),n=x.rows(),h=p+1,ni=samset.size();
-	VectorXi RIndex(n);
 	RIndex.head(h)=SampleR(ni,h);
 	MatrixXf xSub(h_m,p);
 	for(int i=0;i<h;i++) xSub.row(i)=x.row(samset(RIndex(i)));			
@@ -118,26 +117,24 @@ float Main(const MatrixXf& x,const int k0,const int J,const int k1,VectorXf& dP,
 	for(int i=0;i<k1;i++) fin(i)=SubsetRankFun(x,xSub,hl(J),RIndex);
 	return fin.array().log().mean();
 }
-VectorXi CStep(VectorXf& dP,MatrixXf& x,const int h){
+void CStep(VectorXi& dIn,MatrixXf& x,const int h,const int h0){
 	const int n=x.rows(),p=x.cols();
 	float w1,w0;
 	int w2=1,i;
-	VectorXi dIn(n);
-	dIn.setLinSpaced(n,0,n-1);
-	std::nth_element(dIn.data(),dIn.data()+h,dIn.data()+dIn.size(),IdLess(dP.data()));
 	MatrixXf xSub(h,p);
-	for(i=0;i<h;i++) 	xSub.row(i)=x.row(dIn(i));
+	for(i=0;i<h0;i++) 	xSub.row(i)=x.row(dIn(i));
 	RowVectorXf xSub_mean(p);
-	xSub_mean=xSub.colwise().mean();	
-	xSub.rowwise()-=xSub_mean;
+	xSub_mean=xSub.topRows(h0).colwise().mean();	
+	xSub.topRows(h0).rowwise()-=xSub_mean;
 	x.rowwise()-=xSub_mean;
 	MatrixXf Sig(p,p);
-	Sig=xSub.adjoint()*xSub;
-	Sig.array()/=(float)(h-1);
+	Sig=xSub.topRows(h0).adjoint()*xSub.topRows(h0);
+	Sig.array()/=(float)(h0-1);
 	LDLT<MatrixXf> chol=Sig.ldlt();
 	MatrixXf b=MatrixXf::Identity(p,p);
 	chol.solveInPlace(b);
 	w1=chol.vectorD().array().minCoeff();
+	VectorXf dP(n);
 	if(w1>1e-6){
 		w1=std::numeric_limits<float>::max();
 		dP=((x*b).cwiseProduct(x)).rowwise().sum();
@@ -165,34 +162,51 @@ VectorXi CStep(VectorXf& dP,MatrixXf& x,const int h){
 			w2=0;
 		}
 	}
-	return(dIn.head(h).array()+1);
 } 
 extern "C"{
-	void fastpcs(int* n,int* p,int* k0,float* xi,int* k1,float* DpC,int* nsamp,int* J,float* objfunC,int* seed,int* ck,int* ni,int* n1,int* n2,int* hm){
-		const int ik0=*k0,iJ=*J,ik1=*k1,ih_m=*hm;
+	void fastpcs(
+			int* n,		//1
+			int* p,		//2
+			int* k0,	//3
+			float* xi,	//4
+			int* k1,	//5
+			float* DpC,	//6
+			int* nsamp,	//7
+			int* J,		//8
+			float* objfunC,	//9
+			int* seed,	//10
+			int* ck,	//11
+			int* ni,	//12
+			int* n1,	//13
+			int* n2,	//14
+			int* hm,	//15
+			int* hf		//16
+		){
+		const int ik0=*k0,iJ=*J,ik1=*k1,ih_m=*hm,ih_f=*hf;
 		float objfunA,objfunB=*objfunC;
 		mt.seed(*seed);
 		MatrixXf x=Map<MatrixXf>(xi,*n,*p);	
 		VectorXi icK=Map<VectorXi>(ck,*ni);
 		VectorXf DpA=VectorXf::Zero(*n);
 		VectorXf DpB=VectorXf::Zero(*n);
+		VectorXi RIndexi(*n);
+		VectorXi RIndexf(*n);
 		VectorXi hl(*J+1);
-
 		hl.setLinSpaced(*J+1,*p+1,ih_m);
+		hl(*J)=ih_m;
+
 		for(int i=0;i<*nsamp;i++){			//for i=0 to i<#p-subsets.
-			objfunA=Main(x,ik0,iJ,ik1,DpA,ih_m,icK,hl);
+			objfunA=Main(x,ik0,iJ,ik1,DpA,ih_m,icK,hl,RIndexi);
 			if(objfunA<objfunB){
 				objfunB=objfunA;
 				DpB=DpA;
+				RIndexf.head(ih_m)=RIndexi.head(ih_m);
 			}
 		}
-		VectorXi dpH(*hm);
-		dpH.setLinSpaced(*n,0,*n-1);
-		std::nth_element(dpH.data(),dpH.data()+ih_m,dpH.data()+dpH.size(),IdLess(DpB.data()));
-		Map<VectorXi>(n1,*hm)=dpH.head(ih_m).array()+1;		
+		Map<VectorXi>(n1,*hm)=RIndexf.head(ih_m).array()+1;		
  		Map<VectorXf>(DpC,*n)=DpB.array();
-		dpH=CStep(DpB,x,ih_m);
-		Map<VectorXi>(n2,*hm)=dpH.array();
+		CStep(RIndexf,x,ih_f,ih_m);
+		Map<VectorXi>(n2,*hf)=RIndexf.head(ih_f).array()+1;
 		*objfunC=objfunB;
 	}
 }
