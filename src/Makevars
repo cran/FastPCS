@@ -1,11 +1,4 @@
-## Use the R_HOME indirection to support installations of multiple R version
-#PKG_LIBS = `$(R_HOME)/bin/Rscript -e "Rcpp:::LdFlags()"` 
-# This was created by RcppEigen.package.skeleton, but the R script that is 
-# called creates error message:
-# PKG_CPPFLAGS = `$(R_HOME)/bin/Rscript -e "RcppEigen:::RcppEigenCxxFlags()"`
-PKG_CPPFLAGS = -I../inst/include
-#-fdump-tree-vect-details
-#PKG_CXXFLAGS = -funsafe-math-optimizations -ftree-vectorizer-verbose=2 -march=native -mtune=native -ffast-math -DEIGEN_DONT_PARALLELIZE $(SHLIB_OPENMP_CXXFLAGS)
-PKG_CXXFLAGS = -DEIGEN_DONT_PARALLELIZE $(SHLIB_OPENMP_CXXFLAGS)
+PKG_CXXFLAGS =  -I../inst/include -DEIGEN_DONT_PARALLELIZE $(SHLIB_OPENMP_CXXFLAGS)
 PKG_LIBS = `$(R_HOME)/bin/Rscript -e "Rcpp:::LdFlags()"` $(SHLIB_OPENMP_CXXFLAGS)
 CXX_STD = CXX11
+

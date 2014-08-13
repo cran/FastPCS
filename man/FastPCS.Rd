@@ -2,7 +2,7 @@
 \alias{FastPCS}
 \title{Computes the FastPCS multivariate outlyingness index.}
 \usage{
-  FastPCS(x,nsamp,alpha=0.5,seed=NULL)
+  FastPCS(x,nsamp,alpha=0.5,seed=1)
 }
 \arguments{
   \item{x}{A numeric n (n>5*p) by p (p>1) matrix or data frame.}
@@ -14,7 +14,7 @@
  \item{alpha}{numeric parameter controlling the size of the active subsets,
 	 i.e., \code{"h=quanf(alpha,n,p)"}.  Allowed
           values are between 0.5 and 1 and the default is 0.5.}
-\item{seed}{starting value for random generator. Default is seed = NULL}
+\item{seed}{starting value for random generator. A positive integer. Default is seed = 1}
 }
 \value{
 \item{nsamp}{The value of nsamp used.}
@@ -34,6 +34,18 @@
     \item cov: Covariance matrix of the J observations with outlyingness smaller than the rejection threshold.
     \item distance: The statistical distance of each observation wrt the center vector and cov matrix of the J observations with outlyingness smaller than the rejection threshold.
 }
+\item{rawC}{Same structure as \code{$raw}, but after carrying  CSteps off of the members of \code{$raw} until convergence. See details.}
+\item{rewC}{Same structure as \code{$rew}, but after carrying  CSteps off of the members of \code{$raw} until convergence and only then
+ performing a re-weighting step. See details.}
+}
+\details{
+	The slots \code{$rew} and \code{$raw} are provided for backward compatibility only. 
+	FastPCS is affine equivariant (Schmitt et al. (2014)) and thus consistent at the 
+	elliptical model (Maronna et al., (2006) p. 217). 
+	
+	Nonetheless, in experiments, we found that carrying CSteps (Rousseeuw and van Driessen (1999)) 
+	off of the members of \code{$raw} improves the speed of convergence without increasing the bias
+	 of the final estimates.
 }
 \description{
    Computes a fast and robust multivariate outlyingness index for a n by p matrix of 
@@ -78,8 +90,16 @@ results2<-FastPCS(x=x1,nsamp=nstart,seed=1)
 results2$raw$center
 #should be the same
 results1$raw$center\%*\%a1
+
 }
 \references{
+	Maronna, R. A., Martin R. D. and Yohai V. J. (2006). Robust Statistics: Theory and Methods. Wiley, New York.
+
+	P. J. Rousseeuw and K. van Driessen (1999) A fast algorithm for the minimum covariance determinant estimator. Technometrics 41, 212--223.
+
+	Eric Schmitt, Viktoria Oellerer, Kaveh Vakili (2014).
+	The finite sample breakdown point of PCS Statistics and Probability Letters, Volume 94, Pages 214-220
+
 	Vakili, K. and Schmitt, E. (2014).
 	Finding multivariate outliers with FastPCS.
 	\emph{Computational Statistics \& Data Analysis}.
