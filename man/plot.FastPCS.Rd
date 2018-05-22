@@ -35,7 +35,7 @@ nstart<-FPCSnumStarts(p=p,eps=0.4)
 results<-FastPCS(x=x0,nSamp=nstart)
 colvec<-rep("orange",length(z))
 colvec[z==1]<-"blue"
-plot(results,col=colvec,pch=16)
+plot.FastPCS(results,col=colvec,pch=16)
 }
 \keyword{hplot}
 \keyword{robust}
